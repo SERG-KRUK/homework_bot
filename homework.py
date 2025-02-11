@@ -2,7 +2,7 @@ import os
 import time
 import logging
 import requests
-import telegram
+import telebot
 from dotenv import load_dotenv
 from http import HTTPStatus
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-RETRY_TIME = 600  # 10 минут
+RETRY_PERIOD = 600  # 10 минут
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -91,7 +91,8 @@ def parse_status(homework):
     homework_status = homework['status']
 
     if homework_status not in HOMEWORK_VERDICTS:
-        logger.error(f'Неожиданный статус домашней работы: {homework_status}')
+        logger.error(
+            f'Неожиданный статус домашней работы: {homework_status}')
         raise ValueError(
             f'Неожиданный статус домашней работы: {homework_status}')
 
@@ -100,12 +101,12 @@ def parse_status(homework):
 
 
 def send_message(bot, message):
-    """Отправляет сообщение в Telegram."""
+    """Отправляет сообщение в Telegram и логирует ошибки с уровнем ERROR."""
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-        logger.debug('Сообщение успешно отправлено в Telegram')
-    except Exception as error:
-        logger.error(f'Ошибка при отправке сообщения в Telegram: {error}')
+        logger.debug("Сообщение успешно отправлено в Telegram")
+    except telebot.apihelper.ApiException:
+        logger.error('Ошибка при отправке сообщения в Telegram')
 
 
 def main():
@@ -113,7 +114,8 @@ def main():
     if not check_tokens():
         raise SystemExit('Отсутствуют необходимые переменные окружения')
 
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    # Инициализация бота только внутри функции main()
+    bot = telebot.TeleBot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
     while True:
@@ -130,7 +132,8 @@ def main():
         except Exception as error:
             logger.error(f'Сбой в работе программы: {error}')
         finally:
-            time.sleep(RETRY_TIME)
+            # Задержка выполняется всегда, даже если произошла ошибка
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
