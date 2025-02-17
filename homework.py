@@ -172,7 +172,6 @@ def main():
 
             if current_message != previous_message:
                 if send_message(bot, current_message):
-                    logger.debug("Сообщение успешно отправлено в Telegram")
                     previous_message = current_message
 
             current_timestamp = response.get('current_date', current_timestamp)
