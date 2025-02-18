@@ -7,6 +7,7 @@ import requests
 import telebot
 from dotenv import load_dotenv
 from requests.exceptions import RequestException
+
 from exceptions import MissingEnvironmentVariableError, InvalidResponseCode
 
 # Загрузка переменных окружения
@@ -140,11 +141,12 @@ def send_message(bot, message):
     """Отправляет сообщение в Telegram и возвращает результат."""
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-        logger.debug("Сообщение успешно отправлено в Telegram")
-        return True
     except telebot.apihelper.ApiException as error:
         logger.error(f"Ошибка отправки сообщения в Telegram: {error}")
         return False
+
+    logger.debug('Сообщение успешно отправлено в Telegram')
+    return True
 
 
 def main():
@@ -161,29 +163,22 @@ def main():
 
             if not homeworks:
                 logger.debug('Нет новых статусов домашней работы')
-                current_timestamp = response.get('current_date',
-                                                 current_timestamp)
-                time.sleep(RETRY_PERIOD)
                 continue
 
             homework = homeworks[0]
 
             current_message = parse_status(homework)
 
-            if current_message != previous_message:
-                if send_message(bot, current_message):
-                    previous_message = current_message
+            if (current_message != previous_message
+                    and send_message(bot, current_message)):
+                previous_message = current_message
+                current_timestamp = response.get('current_date',
+                                                 current_timestamp)
 
-            current_timestamp = response.get('current_date', current_timestamp)
-
-        except InvalidResponseCode as error:
-            logger.error(f'Ошибка API: {error}')
-        except ConnectionError as error:
-            logger.error(f'Сбой подключения: {error}')
         except Exception as error:
             logger.error(f'Сбой в работе программы: {error}')
-
-        time.sleep(RETRY_PERIOD)
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
