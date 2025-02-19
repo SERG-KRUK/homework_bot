@@ -142,7 +142,7 @@ def send_message(bot, message):
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except telebot.apihelper.ApiException as error:
-        logger.error(f"Ошибка отправки сообщения в Telegram: {error}")
+        logger.error(f'Ошибка отправки сообщения в Telegram: {error}')
         return False
 
     logger.debug('Сообщение успешно отправлено в Telegram')
@@ -176,7 +176,13 @@ def main():
                                                  current_timestamp)
 
         except Exception as error:
-            logger.error(f'Сбой в работе программы: {error}')
+            previous_error = None
+            current_error = str(error)
+            logger.error(f'Сбой в работе программы: {current_error}')
+            if current_error != previous_error:
+                send_success = send_message(current_error)
+                if send_success:
+                    previous_error = current_error
         finally:
             time.sleep(RETRY_PERIOD)
 
