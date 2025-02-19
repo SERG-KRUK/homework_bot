@@ -154,7 +154,7 @@ def main():
     check_tokens()
     bot = telebot.TeleBot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-    previous_message = ""
+    previous_message = ''
 
     while True:
         try:
@@ -176,13 +176,11 @@ def main():
                                                  current_timestamp)
 
         except Exception as error:
-            previous_error = None
-            current_error = str(error)
+            current_error = error
             logger.error(f'Сбой в работе программы: {current_error}')
-            if current_error != previous_error:
-                send_success = send_message(current_error)
-                if send_success:
-                    previous_error = current_error
+            if (current_error != previous_message
+                    and send_message(current_error)):
+                previous_message = current_error
         finally:
             time.sleep(RETRY_PERIOD)
 
